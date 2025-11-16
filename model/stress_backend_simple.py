@@ -82,12 +82,32 @@ def read_csv_to_list(filename):
     """Read CSV file and return as list of dictionaries"""
     questions = []
     try:
-        with open(filename, 'r', encoding='utf-8') as file:
+        # Get the directory where this script is located (model directory)
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        # Join with filename (filename already includes 'datasets/')
+        full_path = os.path.join(script_dir, filename)
+        
+        # Debug: print path (remove in production if needed)
+        # print(f"Attempting to read: {full_path}")
+        
+        with open(full_path, 'r', encoding='utf-8') as file:
             reader = csv.DictReader(file)
             for row in reader:
                 questions.append(row)
-    except FileNotFoundError:
-        print(f"Warning: {filename} not found")
+    except FileNotFoundError as e:
+        print(f"Warning: {filename} not found at {full_path}: {e}")
+        # Try alternative path (if running from root)
+        try:
+            alt_path = os.path.join(script_dir, 'model', filename) if not script_dir.endswith('model') else None
+            if alt_path and os.path.exists(alt_path):
+                with open(alt_path, 'r', encoding='utf-8') as file:
+                    reader = csv.DictReader(file)
+                    for row in reader:
+                        questions.append(row)
+        except:
+            pass
+    except Exception as e:
+        print(f"Error reading {filename}: {e}")
     return questions
 
 # ---------- Stress calculation ----------
@@ -104,7 +124,7 @@ def get_questions(role):
     # Generate random indices for each category
     random.seed()  # Use current time as seed for true randomization
     
-    # Read CSV files
+    # Read CSV files (paths relative to model directory)
     emotional_questions = read_csv_to_list("datasets/emotional.csv")
     safety_questions = read_csv_to_list("datasets/safety.csv")
     confidence_questions = read_csv_to_list("datasets/confidence.csv")
