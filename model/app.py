@@ -2,20 +2,16 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
 import sys
+import importlib.util
 
-# Fix import path for Vercel serverless environment
-# Add the model directory to Python path so we can import stress_backend_simple
-model_dir = os.path.dirname(os.path.abspath(__file__))
-if model_dir not in sys.path:
-    sys.path.insert(0, model_dir)
+# CRITICAL FIX: Load stress_backend_simple using importlib for Vercel compatibility
+_current_dir = os.path.dirname(os.path.abspath(__file__))
+_stress_backend_path = os.path.join(_current_dir, 'stress_backend_simple.py')
 
-# Import stress_backend_simple - it's in the same directory as this file
-# Try relative import first, fallback to direct import
-try:
-    from . import stress_backend_simple
-except ImportError:
-    # If relative import fails (not in a package), try direct import
-    import stress_backend_simple
+# Use importlib to load the module directly
+spec = importlib.util.spec_from_file_location("stress_backend_simple", _stress_backend_path)
+stress_backend_simple = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(stress_backend_simple)
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
